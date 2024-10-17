@@ -1,0 +1,5 @@
+# Não sei se posso upar o banco (e é grande demais de qualquer forma).
+*.sqlite3
+*.mwb
+*.sql
+*.csv
