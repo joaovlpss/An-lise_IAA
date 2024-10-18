@@ -5,7 +5,7 @@ def query_aggregate_data(municipality='', state='', admin_dependency='Total', ye
     Dado um escopo de localização (estado ou município) e rede (estadual, municipal, federal ou total) e um ano,
     retorna uma query SQL que recupera todas as amostras agregadas daquele escopo, rede e ano.
 
-    Esse méto.do só deve ser chamado internamente.
+    Esse método só deve ser chamado internamente.
 
     :param municipality: Nome completo do município em PT-BR (mutualmente exclusivo com estado).
     :param state: Abreviação da UF do estado (Ex: SP) (mutualmente exclusivo com municipio).
@@ -18,7 +18,7 @@ def query_aggregate_data(municipality='', state='', admin_dependency='Total', ye
 
     if municipality:
         return f"""
-        SELECT nome_municipio, etapa, lp, mat FROM indicadores_aprendizado_adequado iaa 
+        SELECT co_municipio, etapa, lp, mat FROM indicadores_aprendizado_adequado iaa 
         INNER JOIN amostras_municipios am ON iaa.id_amostra = am.id 
         WHERE (iaa.ano = '{year}')
             AND (iaa.localizacao = 'Total')
@@ -42,7 +42,7 @@ def query_granular_data(municipality='', state='', admin_dependency='Total', yea
     Dado um escopo de localização (estado ou município) e rede (estadual, municipal, federal ou total) e um ano,
     retorna uma query SQL que recupera todas as amostras granulares daquele escopo, rede e ano.
 
-    Esse méto.do só deve ser chamado internamente.
+    Esse método só deve ser chamado internamente.
 
     :param municipality: Nome completo do município em PT-BR (mutualmente exclusivo com estado).
     :param state: Abreviação da UF do estado (Ex: SP) (mutualmente exclusivo com municipio).
@@ -152,13 +152,13 @@ def load_census_data(df_granular_data, year=''):
 def load_all_municipalities_agg():
     """Retorna um dataframe com uma coluna com todos os municípios do banco de dados."""
 
-    query = """SELECT DISTINCT nome_municipio FROM amostras_municipios am"""
+    query = """SELECT DISTINCT co_municipio FROM amostras_municipios am"""
     uri = "sqlite://data/banco_pca.sqlite3"
     return pl.read_database_uri(query=query, uri=uri)
 
 def load_all_municipalities_gran():
     """Retorna um dataframe com uma coluna com todos os municípios do banco de dados."""
 
-    query = """SELECT DISTINCT nome_municipio FROM amostras_escolas ae"""
+    query = """SELECT DISTINCT co_municipio FROM amostras_escolas ae"""
     uri = "sqlite://data/banco_pca.sqlite3"
     return pl.read_database_uri(query=query, uri=uri)
