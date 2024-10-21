@@ -68,7 +68,7 @@ def process_granular_data(granular_data_df):
             (( pl.col('mat') * cs.last() ).sum() / cs.last().sum() ).alias('mat')
         ])
     )
-    return processed_df
+    return procesdfsed_
 
 def concatenate_columns(df_aggregate, df_granular, df_scatterplot_1, df_scatterplot_2):
     """
@@ -89,9 +89,17 @@ def concatenate_columns(df_aggregate, df_granular, df_scatterplot_1, df_scatterp
     :return: df_scatterplot_1 alterado com uma nova linha com as primeiras colunas de df_aggregate e df_granular.
     df_scatterplot_2 alterado com uma nova linha com as segundas colunas de df_aggregate e df_granular.
     """
+
     # Saber se os dataframes possuem o shape esperado
-    assert df_aggregate.shape == (1, 2), "df_aggregate should have 1 row and 2 columns"
-    assert df_granular.shape == (1, 2), "df_granular should have 1 row and 2 columns"
+    if df_aggregate.shape != (1, 2):
+        print('Unexpected shape for aggregate dataframe:')
+        print(df_aggregate)
+        raise AssertionError('df_aggregate should have 1 row and 2 columns')
+        
+    if df_granular.shape != (1, 2):
+        print('Unexpected shape for aggregate dataframe:')
+        print(df_granular)
+        raise AssertionError('df_granular should have 1 row and 2 columns')
 
     # Criar novas linhas
     new_row_1 = pl.DataFrame({
@@ -125,17 +133,21 @@ def calculate_differences(df_aggregate, df_granular, df_diff_1, df_diff_2):
     df_granular.
     """
     # Saber se os dataframes possuem o shape esperado
-    assert df_aggregate.shape == (1, 2), "df_aggregate should have 1 row and 2 columns"
-    assert df_granular.shape == (1, 2), "df_granular should have 1 row and 2 columns"
+    if df_aggregate.shape != (1, 2):
+        print('Unexpected shape for aggregate dataframe:')
+        print(df_aggregate)
+        raise AssertionError('df_aggregate should have 1 row and 2 columns')
+        
+    if df_granular.shape != (1, 2):
+        print('Unexpected shape for aggregate dataframe:')
+        print(df_granular)
+        raise AssertionError('df_granular should have 1 row and 2 columns')
 
     diff_df = df_aggregate - df_granular
 
     # Calcular as diferenças
     diff_1 = diff_df.select(pl.col(diff_df.columns[0]))
     diff_2 = diff_df.select(pl.col(diff_df.columns[1]))
-
-    print(diff_1)
-    print(diff_2)
 
     # Concatenar as diferenças aos DFs
     df_diff_1 = pl.concat([df_diff_1, diff_1], how="vertical")
@@ -144,6 +156,4 @@ def calculate_differences(df_aggregate, df_granular, df_diff_1, df_diff_2):
     return df_diff_1, df_diff_2
 
 
-
-
-    return
+import polars as pl

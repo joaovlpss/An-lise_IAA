@@ -18,13 +18,13 @@ def query_aggregate_data(municipality='', state='', admin_dependency='Total', ye
 
     if municipality:
         return f"""
-        SELECT co_municipio, etapa, lp, mat FROM indicadores_aprendizado_adequado iaa 
+        SELECT am.id, etapa, lp, mat FROM indicadores_aprendizado_adequado iaa 
         INNER JOIN amostras_municipios am ON iaa.id_amostra = am.id 
         WHERE (iaa.ano = '{year}')
             AND (iaa.localizacao = 'Total')
             AND (iaa.rede = '{admin_dependency}')
             AND (iaa.etapa != 'Ensino Médio')
-            AND (am.nome_municipio = '{municipality}')
+            AND (am.id = '{municipality}')
         """
     elif state:
         return f"""
@@ -59,7 +59,7 @@ def query_granular_data(municipality='', state='', admin_dependency='Total', yea
                 INNER JOIN amostras_escolas ae ON iaa.id_amostra = ae.id 
                 WHERE (iaa.ano = '{year}')
                     AND (iaa.etapa != 'Ensino Médio')
-                    AND (ae.nome_municipio = '{municipality}')
+                    AND (ae.codigo_municipio = '{municipality}')
                 """
     elif municipality and (admin_dependency != 'Total'):
         return f"""
@@ -68,7 +68,7 @@ def query_granular_data(municipality='', state='', admin_dependency='Total', yea
                     WHERE (iaa.ano = '{year}')
                         AND (iaa.rede = '{admin_dependency}')
                         AND (iaa.etapa != 'Ensino Médio')
-                        AND (ae.nome_municipio = '{municipality}')
+                        AND (ae.codigo_municipio = '{municipality}')
                 """
 
     if state and (admin_dependency == 'Total'):
@@ -81,7 +81,7 @@ def query_granular_data(municipality='', state='', admin_dependency='Total', yea
                 """
     elif state and (admin_dependency != 'Total'):
         return f"""
-                SELECT ae.id, nome_escola, uf, etapa, lp, mat FROM indicadores_aprendizado_adequado iaa 
+                SELECT ae.id, nome_escola, etapa, lp, mat FROM indicadores_aprendizado_adequado iaa 
                     INNER JOIN amostras_escolas ae ON iaa.id_amostra = ae.id 
                     WHERE (iaa.ano = '{year}')
                         AND (iaa.etapa != 'Ensino Médio')
@@ -117,7 +117,9 @@ def load_granular_data(municipality='', state='', admin_dependency='Total', year
     """
     uri = "sqlite://data/banco_pca.sqlite3"
     query = query_granular_data(municipality=municipality, state=state, admin_dependency=admin_dependency, year=year)
-    return pl.read_database_uri(query=query, uri=uri)
+    return pl.read_database_uri(query=query, uri=uri ,schema_overrides= ({"id" : pl.Int64, "nome_escola" : pl.String,
+                                                                         "etapa" : pl.String, "lp" : pl.Float64,
+                                                                         "mat" : pl.Float64}) )
 
 def load_census_data(df_granular_data, year=''):
     """
@@ -130,19 +132,11 @@ def load_census_data(df_granular_data, year=''):
     :return: O mesmo dataframe, com duas novas colunas: QT_MAT_FUND_AI e QT_MAT_FUND_AF, com as matriculas dos anos
     iniciais e finais, respectivamente.
     """
-    census_df = (
-        pl.read_csv(f'data/microdados_ed_basica_{year}.csv', ignore_errors=True, encoding='latin1',
-                    truncate_ragged_lines=True, separator=';')
-        .select([
-            pl.col('CO_ENTIDADE'),
-            pl.col('QT_MAT_FUND_AI'),
-            pl.col('QT_MAT_FUND_AF')
-        ])
-        .filter(
+    census_df = ( pl.scan_csv(f'data/microdados_ed_basica_{year}.csv', ignore_errors=True, separator=',',
+                    schema=({'CO_ENTIDADE' : pl.Int64, 'QT_MAT_FUND_AI' : pl.Int64, 'QT_MAT_FUND_AF' : pl.Int64 }) ).filter(
             pl.col('CO_ENTIDADE').is_in(df_granular_data['id'])
-        )
-    ).lazy().collect()
-
+    ) ).collect()
+    
     census_df = census_df.rename({'CO_ENTIDADE': 'id'})
 
     df_granular_data = df_granular_data.join(census_df, on='id', how='left')
@@ -152,13 +146,13 @@ def load_census_data(df_granular_data, year=''):
 def load_all_municipalities_agg():
     """Retorna um dataframe com uma coluna com todos os municípios do banco de dados."""
 
-    query = """SELECT DISTINCT co_municipio FROM amostras_municipios am"""
+    query = """SELECT DISTINCT id FROM amostras_municipios am"""
     uri = "sqlite://data/banco_pca.sqlite3"
     return pl.read_database_uri(query=query, uri=uri)
 
 def load_all_municipalities_gran():
     """Retorna um dataframe com uma coluna com todos os municípios do banco de dados."""
 
-    query = """SELECT DISTINCT co_municipio FROM amostras_escolas ae"""
+    query = """SELECT DISTINCT codigo_municipio FROM amostras_escolas ae"""
     uri = "sqlite://data/banco_pca.sqlite3"
     return pl.read_database_uri(query=query, uri=uri)
